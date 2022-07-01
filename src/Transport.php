@@ -35,6 +35,7 @@ use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 use function get_class;
 use function ini_get;
@@ -273,7 +274,7 @@ final class Transport implements ClientInterface, HttpAsyncClient
         }
         $request = $this->decorateRequest($request);
         $this->lastRequest = $request;
-        if(!$this->logger instanceof Psr\Log\NullLogger) {
+        if(!$this->logger instanceof NullLogger) {
             $this->logRequest("Request", $request);
         }
 
@@ -285,7 +286,7 @@ final class Transport implements ClientInterface, HttpAsyncClient
 
                 $this->lastResponse = $response;
                 // FIXED: Проверка на присутствие логера
-                if(!$this->logger instanceof Psr\Log\NullLogger) {
+                if(!$this->logger instanceof NullLogger) {
                     $this->logResponse("Response", $response, $count);
                 }
 
