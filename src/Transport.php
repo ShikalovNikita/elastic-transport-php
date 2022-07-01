@@ -139,7 +139,7 @@ final class Transport implements ClientInterface, HttpAsyncClient
 
     /**
      * Set the x-elastic-client-meta header
-     * 
+     *
      * The header format is specified by the following regex:
      * ^[a-z]{1,}=[a-z0-9\.\-]{1,}(?:,[a-z]{1,}=[a-z0-9\.\-]+)*$
      */
@@ -167,7 +167,7 @@ final class Transport implements ClientInterface, HttpAsyncClient
      */
     private function purgePreReleaseTag(string $version): string
     {
-        return str_replace(['alpha', 'beta', 'snapshot', 'rc', 'pre'], 'p', strtolower($version)); 
+        return str_replace(['alpha', 'beta', 'snapshot', 'rc', 'pre'], 'p', strtolower($version));
     }
 
     public function getLastRequest(): RequestInterface
@@ -181,7 +181,7 @@ final class Transport implements ClientInterface, HttpAsyncClient
     }
 
     /**
-     * Setup the headers, if not already present 
+     * Setup the headers, if not already present
      */
     private function setupHeaders(RequestInterface $request): RequestInterface
     {
@@ -208,7 +208,7 @@ final class Transport implements ClientInterface, HttpAsyncClient
     }
 
     /**
-     * Setup the connection Uri 
+     * Setup the connection Uri
      */
     private function setupConnectionUri(Node $node, RequestInterface $request): RequestInterface
     {
@@ -242,7 +242,7 @@ final class Transport implements ClientInterface, HttpAsyncClient
     private function logRequest(string $title, RequestInterface $request): void
     {
         $this->logger->info(sprintf(
-            "%s: %s %s", 
+            "%s: %s %s",
             $title,
             $request->getMethod(),
             (string) $request->getUri()
@@ -255,7 +255,7 @@ final class Transport implements ClientInterface, HttpAsyncClient
         $this->logger->info(sprintf(
             "%s (retry %d): %d",
             $title,
-            $retry, 
+            $retry,
             $response->getStatusCode()
         ));
         $this->logHeaders($response);
@@ -266,15 +266,17 @@ final class Transport implements ClientInterface, HttpAsyncClient
      * @throws ClientExceptionInterface
      */
     public function sendRequest(RequestInterface $request): ResponseInterface
-    {   
+    {
         if (empty($request->getUri()->getHost())) {
             $node = $this->nodePool->nextNode();
             $request = $this->setupConnectionUri($node, $request);
         }
         $request = $this->decorateRequest($request);
         $this->lastRequest = $request;
-        $this->logRequest("Request", $request);
-        
+        if(!$this->logger instanceof Psr\Log\NullLogger) {
+            $this->logRequest("Request", $request);
+        }
+
         $count = -1;
         while ($count < $this->getRetries()) {
             try {
@@ -282,7 +284,10 @@ final class Transport implements ClientInterface, HttpAsyncClient
                 $response = $this->client->sendRequest($request);
 
                 $this->lastResponse = $response;
-                $this->logResponse("Response", $response, $count);
+                // FIXED: Проверка на присутствие логера
+                if(!$this->logger instanceof Psr\Log\NullLogger) {
+                    $this->logResponse("Response", $response, $count);
+                }
 
                 return $response;
             } catch (NetworkExceptionInterface $e) {
@@ -397,7 +402,7 @@ final class Transport implements ClientInterface, HttpAsyncClient
             $count++;
             return $client->sendAsyncRequest($request);
         };
-        
+
         // Add getRetries() callables using then()
         for ($i=0; $i < $this->getRetries(); $i++) {
             $promise = $promise->then($onFulfilled, $onRejected);
